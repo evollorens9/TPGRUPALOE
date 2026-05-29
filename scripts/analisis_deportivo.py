@@ -1,16 +1,24 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Leer datos
-df = pd.read_csv("../datos/partidos.csv")
+# Leer dataset
+df = pd.read_csv("datos/partidos.csv")
 
-# Equipos
+# Renombrar columnas importantes
+df = df.rename(columns={
+    "HomeTeam": "local",
+    "AwayTeam": "visitante",
+    "FTHG": "goles_local",
+    "FTAG": "goles_visitante"
+})
+
+# Obtener equipos
 equipos = pd.concat([
     df["equipo_local"],
     df["equipo_visitante"]
 ]).unique()
 
-# Tabla
+# Crear tabla
 tabla = {
     equipo: {
         "Puntos": 0,
@@ -36,37 +44,40 @@ for _, fila in df.iterrows():
     tabla[visitante]["GF"] += gv
     tabla[visitante]["GC"] += gl
 
-    # Victoria local
     if gl > gv:
         tabla[local]["Puntos"] += 3
         tabla[local]["Ganados"] += 1
 
-    # Victoria visitante
     elif gv > gl:
         tabla[visitante]["Puntos"] += 3
         tabla[visitante]["Ganados"] += 1
 
-    # Empate
     else:
         tabla[local]["Puntos"] += 1
         tabla[visitante]["Puntos"] += 1
 
-# Convertir a DataFrame
+# DataFrame final
 tabla_df = pd.DataFrame(tabla).T
 
-# Ordenar por puntos
-tabla_df = tabla_df.sort_values(by="Puntos", ascending=False)
+# Diferencia de gol
+tabla_df["DG"] = tabla_df["GF"] - tabla_df["GC"]
 
-# Guardar tabla
-tabla_df.to_csv("../resultados/tabla_posiciones.csv")
+# Ordenar
+tabla_df = tabla_df.sort_values(
+    by=["Puntos", "DG"],
+    ascending=False
+)
 
-# Promedio goles
-promedio_goles = (
+# Guardar resultados
+tabla_df.to_csv("resultados/tabla_posiciones.csv")
+
+# Promedio de goles
+promedio = (
     df["goles_local"].sum() +
     df["goles_visitante"].sum()
 ) / len(df)
 
-print("Promedio de goles:", round(promedio_goles, 2))
+print(f"Promedio de goles: {promedio:.2f}")
 
 # Gráfico
 tabla_df["Puntos"].plot(kind="bar")
@@ -76,6 +87,6 @@ plt.ylabel("Puntos")
 
 plt.tight_layout()
 
-plt.savefig("../resultados/grafico_puntos.png")
+plt.savefig("resultados/grafico_puntos.png")
 
-print("Análisis completado.")
+print("Proceso finalizado.")
